@@ -1,0 +1,36 @@
+import cv2
+import numpy as np
+from networktables import NetworkTable
+try:
+	cap=cv2.VideoCapture(0)
+except:
+	print('a')
+cleanExit=0
+NetworkTable.initialize(server='10.24.72.52')
+table=NetworkTable.getTable('testTable')
+cleanExit=0
+while True:
+	ret,image=cap.read()
+	blur=cv2.GaussianBlur(image,(5,5),5)
+	hsv=cv2.cvtColor(blur,cv2.COLOR_BGR2HSV)
+	lower_green=np.array([50,190,100])
+	upper_green=np.array([90,255,255])
+	mask=cv2.inRange(hsv,lower_green,upper_green)
+	a,contours,b=cv2.findContours(mask,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+	if len(contours)>0:
+		biggestContour=max(contours,key=cv2.contourArea)
+		m=cv2.moments(biggestContour)
+		if m['m00']!=0:
+			largestPoint=((m['m10']/m['m00']),(m['m01']/m['m00']))
+			print(largestPoint)
+			table.putNumber('shootCx',largestPoint[0])
+			table.putNumber('shootCy',largestPoint[1])
+
+
+	key=cv2.waitKey(1)
+	if(key==27):
+		break
+	if(cleanExit==1):
+        	break
+cv2.destroyAllWindows()
+cap.release()
