@@ -31,6 +31,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * project.
  */
 public class Robot extends IterativeRobot {
+	Joystick gamepad = new Joystick(0);
 	int index=0;
 	long time;
 	double[][] waypointPath = new double[][]{
@@ -39,7 +40,7 @@ public class Robot extends IterativeRobot {
 };
 
 	FalconPathPlanner path=new FalconPathPlanner(waypointPath); 
-	
+	double ramp;
 	double Targetspeed;
 	Joystick xbox=new Joystick(0);
 	TalonSRX leftTalon,rightTalon;
@@ -54,22 +55,27 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void robotInit() {
+	
+
 		time =System.currentTimeMillis();
-		
+	
 		rightTalon=new TalonSRX(2);
 		rightTalon.setInverted(true);
 		leftTalon=new TalonSRX(14);
 		leftTalon.setSensorPhase(true);
-		rightTalon.setSensorPhase(true);
-		rightTalon.config_kF(0,1.9175, 0);
-		rightTalon.config_kP(0, 3.5, 0);
-		rightTalon.config_kI(0, .03, 0);
-		rightTalon.config_kD(0, 175, 0);
+		//1.45
+		rightTalon.config_kF(0, 1.6570, 0);
+		rightTalon.config_kP(0, .4, 0);
+		rightTalon.config_kI(0, .004, 0);
+		rightTalon.config_kD(0, 0, 0);
 		
-		leftTalon.config_kF(0, 1.363, 0);
-		leftTalon.config_kP(0,3, 0);
-		leftTalon.config_kI(0, .02, 0);
-		leftTalon.config_kD(0, 300, 0);
+		// Old left 1.25
+		leftTalon.config_kF(0, 1.25, 0);
+		leftTalon.config_kP(0, 0.15, 0);
+		leftTalon.config_kI(0, .0015, 0);
+		leftTalon.config_kD(0, 0, 0);
+		SmartDashboard.putNumber("velLeft", leftTalon.getClosedLoopError(0));
+		SmartDashboard.putNumber("velright", rightTalon.getClosedLoopError(0));
 		m_chooser.addDefault("Default Auto", kDefaultAuto);
 		m_chooser.addObject("My Auto", kCustomAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
@@ -116,10 +122,23 @@ public class Robot extends IterativeRobot {
 	//946 960 977
 	@Override
 	public void teleopPeriodic() {
-		Targetspeed=(350)*xbox.getRawAxis(0)/600;
-		leftTalon.set(ControlMode.Velocity,Targetspeed*1420);
-		rightTalon.set(ControlMode.Velocity,Targetspeed*1320);
-		System.out.println(leftTalon.getSelectedSensorPosition(0));
+		double leftCountRatio = 0.7;
+		//if(ramp<500) ramp=ramp+.25;
+		SmartDashboard.putNumber("velLeft", leftTalon.getSelectedSensorVelocity(0));
+		SmartDashboard.putNumber("velright", rightTalon.getSelectedSensorVelocity(0));
+		
+		
+		//left has about 0.711111111 times slower counts. Unsure
+		Targetspeed=300;
+			rightTalon.set(ControlMode.Velocity,Targetspeed*leftCountRatio);
+		leftTalon.set(ControlMode.Velocity,Targetspeed);
+		
+		double leftFPS = ((double)leftTalon.getSelectedSensorVelocity(0)/1440.0)*15.7;
+		double rightFPS = ((double)rightTalon.getSelectedSensorVelocity(0)/1008.0)*15.7;
+
+		
+		//System.out.println("right speed: "+(rightTalon.getSelectedSensorVelocity(0))+" leftspeed: "+(leftTalon.getSelectedSensorVelocity(0))+" lfps: ");
+		System.out.println("leftFPS "+leftFPS+" rightFPS "+rightFPS);
 	}
 
 	/**
@@ -127,8 +146,8 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void testInit() {
-		
-		
+		//2.
+		//177.8797 counts per second
 		
 	}
 	public double leftinchesToNative(double speed) {
@@ -142,12 +161,19 @@ public class Robot extends IterativeRobot {
 		//speed*10=counts per second
 		//53.0616576 counts per inch
 		return (speed*10)*1310/(53.0616576);
-		
+		//18.078
 		
 	}
 	public void testPeriodic() {
-		
-		
+		/*  cycles in rotation
+		 * right 8065 201.016
+		 *left 1432
+		 */
+		rightTalon.set(ControlMode.PercentOutput, 1.0);
+		SmartDashboard.putNumber("velright", rightTalon.getSelectedSensorVelocity(0));
+	//leftTalon.set(ControlMode.PercentOutput, 1.0);
+		SmartDashboard.putNumber("velleft", leftTalon.getSelectedSensorVelocity(0));
+		//left 
 		 
 	}
 }
